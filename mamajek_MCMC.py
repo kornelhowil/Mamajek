@@ -19,6 +19,11 @@ import weightedstats as ws
 fun = initialize_interp()
 rc('text', usetex=False) #nie wiem czy potrzebne
 
+
+#-------------------------------------------------------------------------------------
+################################ INPUT AND CONSTANTS #################################
+#-------------------------------------------------------------------------------------
+
 fname_samples =  "BLG196.5-CLEAN_CUT_1_472.91439489720904.npy" 
 # cords
 alpha = 270.84187
@@ -63,7 +68,10 @@ galb=eq2gal.galactic.b.degree
 print("Reading input file: ", fname_samples)
 data = np.load(fname_samples)
 
-#-----------------------------------------
+#-------------------------------------------------------------------------------------
+################################## MULTIPROCESSING ###################################
+#-------------------------------------------------------------------------------------
+
 count = 0
 def MultiProcessingLoop(iteration):
 
@@ -135,7 +143,6 @@ def MultiProcessingLoop(iteration):
 
     return [w_gal, w_gaia, mass, distance, blend, Ilens, isource]
 
-# Multiprocessing:
 start_time = time.time()
 
 if __name__ == '__main__': 
