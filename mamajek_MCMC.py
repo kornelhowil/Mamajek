@@ -83,58 +83,59 @@ def MultiProcessingLoop(iteration):
     fs = data[iteration][6]
 
     piE = np.sqrt(piEN*piEN+piEE*piEE)
-    # correcting tE to heliocentric view
+    # Correcting tE to heliocentric view
     oneovertEH_n = -vsun_n*piE + piEN/(tE*piE)
     oneovertEH_e = -vsun_e*piE + piEE/(tE*piE)
     oneovertEH = np.sqrt(oneovertEH_n**2+oneovertEH_e**2)
     teH = 1./oneovertEH
-    # requiring the same angle as piEE-piEN - equatorial coords, but mu is in galactic.
-    # converting piEE,piEN to galactic:
-    # in galactic coordinates, the PA or equatorial north pole, approximate angle
+    # Requiring the same angle as piEE-piEN - equatorial coords, but mu is in galactic.
+    # Converting piEE,piEN to galactic:
+    # In galactic coordinates, the PA or equatorial north pole, approximate angle
     northPA=60.*deg2rad
     piEN_g=piEN*np.cos(northPA)-piEE*np.sin(northPA) # north galactic coord of piE
     piEE_g=piEN*np.sin(northPA)+piEE*np.cos(northPA) # east  galactic coord of piE
     piEvec = [piEE_g, piEN_g]
-    #what accuracy to require?
+    # What accuracy to require?
     accuracyalpha = 15 # deg + and -
-    #how long until right angle is found
+    # How long until right angle is found
     alphawait=1000
     alphacount=0
     angle=10000.
-    # random murel from distribution:
+    # Random murel from distribution:
     while ((np.abs(angle)>accuracyalpha) and (alphacount<alphawait)):
         mu1x = np.random.uniform(mu_d_x-15., mu_d_x+15.) 
         mu1y = np.random.uniform(mu_d_y-15., mu_d_y+15.) 
         mu2x = np.random.uniform(mu_b_x-15., mu_b_x+15.) 
         mu2y = np.random.uniform(mu_b_y-15., mu_b_y+15.) 
         murelvec = [mu1x-mu2x, mu1y-mu2y]
-        #angular difference between two vectors, assuring they have the same direction:
+        # Angular difference between two vectors, assuring they have the same direction:
         angle = np.degrees(np.math.atan2(np.linalg.det([piEvec,murelvec]),np.dot(piEvec,murelvec)))
         alphacount+=1
 
     murel = np.sqrt((mu1x-mu2x) ** 2 + (mu1y - mu2y) ** 2)
-    #SOURCE DISTANCE - randomising very broadly - it will be weighted later with the Galaxy
-    DS = np.random.uniform(DSmin, DSmax) #flat , from a wide range, but then later will be weighted based on the PDF
-    #weight: #added masspower, #not normalised
+    # SOURCE DISTANCE - randomising very broadly - it will be weighted later with the Galaxy
+    DS = np.random.uniform(DSmin, DSmax) 
+    # Weight: not normalised
     w_gal = get_gal_jac(alpha,delta, piEN, piEE, murel, teH, (1./DS), t0par, vsun_n_kms,vsun_e_kms,gall,galb, masspower)
     w_gaia = 1.0 
-
+    # Mass
     mass = murel * ((teH / 365.25) / piE) / KAPPA
+    # Lens distance
     distance = 1. / (murel * (teH / 365.25) * piE + 1./DS)
-    #blend brightness from blending parameter (fs); fs>1 ("negative blending") is allowed, but not too much (<~1.4)
+    # Blend brightness from blending parameter (fs); fs>1 ("negative blending") is allowed, but not too much (<~1.4)
     fblend = 1 - fs
     if (fs < 1): blend = I0 - 2.5 * np.log10(fblend)
     else: blend = 22.
     if blend > 22: blend=22.
-    #brightness of the lens from its mass - now using Mamajek table
+    # Brightness of the lens from its mass - now using Mamajek table
     Ilens = get_MS_mag(fun,mass, distance, AI)
-    #brightness of the source star from fs
+    # Brightness of the source star from fs
     isource= I0 - 2.5 * np.log10(fs)
     if (fs < 0): isource = 24.
 
     return [w_gal, w_gaia, mass, distance, blend, Ilens, isource]
 
-#multiprocessing:
+# Multiprocessing:
 start_time = time.time()
 
 if __name__ == '__main__': 
@@ -147,9 +148,8 @@ if __name__ == '__main__':
 
 print("--- Multiprocessing took %s seconds ---" % (time.time() - start_time))
 
-results_t = np.array(results).T #transposition
+results_t = np.array(results).T 
 #0 - w_gal, 1 - w_gaia, 2 - mass, 3 - distance, 4 - blend, 5 - Ilens, 6 - isource
-
 storewgal = results_t[0]
 storewgaia=results_t[1]
 ML = results_t[2]
@@ -158,23 +158,25 @@ Ibl = results_t[4]
 IL = results_t[5]
 IS = results_t[6]
 W=[] 
-#normalising weights:
+# Normalising weights:
 w1 = storewgal/np.sum(storewgal)
 w2 = storewgaia/np.sum(storewgaia)
 W = w1*w2
 
-###PLOTS AND OUTPUTS
+#-------------------------------------------------------------------------------------
+############################### PLOTS AND OUTPUTS ####################################
+#-------------------------------------------------------------------------------------
 
-#############[0,  1,  2, 3,4, 5, 6, 7]
-ZIP=np.array([Ibl,ML,W,DL,IL]).T
+#            [0,   1,  2, 3,  4]
+ZIP=np.array([Ibl, ML, W, DL, IL]).T
 
-#correct computation of remnant prob
+# Correct computation of remnant prob
 remn = ZIP[ZIP[:,4]<ZIP[:,0]]
 nonrem = ZIP[ZIP[:,4]>=ZIP[:,0]]
 remnant = np.sum(remn[:,3])
 nonremnant = np.sum(nonrem[:,3])
 
-#computing the values:
+# Computing the values:
 bins = np.linspace( -1, 1.5, 200)
 bins= np.linspace(0.1, 40, 200)
 n, bins0 = np.histogram((ML), bins=bins, weights= W, density=True)
@@ -196,6 +198,7 @@ perc1plus=bins[np.digitize([0.5+0.341],nsum)[0]]
 
 # Plots 
 fig = plt.figure(figsize=(5,7))
+
 # MASS - DISTANCE
 ax1 = plt.axes([0.17,0.6 ,0.80,0.35])
 H1, xedges, yedges = np.histogram2d(ZIP[:,1],ZIP[:,3],weights=ZIP[:,2],bins=[10**np.linspace(-1,1.7,100),np.linspace(0,8,100)], normed=True)
@@ -212,6 +215,7 @@ cbar=plt.colorbar(map1,ticks=[1e-5,1e-4,1e-3,1e-2])
 cbar.ax.set_yticklabels(['-5','-4','-3','-2'])
 cbar.set_label("log prob density",labelpad=0)
 ax5 = plt.axes([0.17,0.10,0.80,0.35])
+
 # BLEND - LENS
 H2, xedges, yedges = np.histogram2d(ZIP[:,0],ZIP[:,4],weights=ZIP[:,2],bins=[np.linspace(15,22,100),np.linspace(15,22,100)], normed=True)
 map2 = plt.pcolormesh(yedges,xedges,H2/np.sum(H2),cmap='jet',norm=LogNorm(), edgecolors='None', linewidth=0,vmin=1e-5, vmax=1e-2)
@@ -231,8 +235,7 @@ plt.fill_between(np.linspace(1,30,50),np.linspace(1,30,50),30,alpha=0.1,facecolo
 
 plt.savefig(plotname+'.pdf')
 
-
-#saving masses and weights
+# Saving masses and weights
 per=np.percentile(DL, [15.8655, 50, 84.1345])
 per2=np.percentile(IL, [15.8655, 50, 84.1345])
 per3=np.percentile(ML, [15.8655, 50, 84.1345])
