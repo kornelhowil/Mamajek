@@ -33,7 +33,7 @@ AI =  0.956
 # t0par
 t0par = 4818 
 # number of iterations
-L = 5e5 
+L = 5e4 
 # some fixed distance values
 DSest = 8000 
 DSmin = 7999 
@@ -68,6 +68,8 @@ data = np.load(fname_samples)
 #-------------------------------------------------------------------------------------
 ################################## MULTIPROCESSING ###################################
 #-------------------------------------------------------------------------------------
+
+print("--- Starting Multiprocessing ---")
 
 def MultiProcessingLoop(iteration):
 
@@ -138,7 +140,7 @@ def MultiProcessingLoop(iteration):
 start_time = time.time()
 
 if __name__ == '__main__': 
-    iterations = range(L)
+    iterations = range(int(L))
     results = p_map(MultiProcessingLoop, iterations)
 
 print("--- Multiprocessing took %s seconds ---" % (time.time() - start_time))

@@ -34,7 +34,7 @@ AI =  0.956
 # t0par
 t0par = 4818 
 # number of iterations
-L = int(5e4)
+L = 5e4
 # some fixed distance values
 DSest = 8000 
 DSmin = 7999 
@@ -63,25 +63,24 @@ gall=eq2gal.galactic.l.degree
 galb=eq2gal.galactic.b.degree
 
 ## READING THE FILE
-#print("Reading input file: ", fname_samples)
-#data = open(fname_samples, "r")
-#data = [line.split() for line in data]
+print("Reading input file: ", fname_samples)
 data = pd.read_csv(fname_samples, sep="\t", header=None)
-
 print(data)
 
-storet0 = np.random.normal(data[1][0], data[2][0], L)
-storetE = np.random.normal(data[1][1], data[2][1], L)
-storeu0 = np.random.normal(data[1][2], data[2][2], L)
-storepiEN = np.random.normal(data[1][3], data[2][3], L)
-storepiEE = np.random.normal(data[1][4], data[2][4], L)
-storeI0 = np.random.normal(data[1][5], data[2][5], L)
-storefs = np.random.normal(data[1][6], data[2][6], L)
+storet0 = np.random.normal(data[1][0], data[2][0], int(L))
+storetE = np.random.normal(data[1][1], data[2][1], int(L))
+storeu0 = np.random.normal(data[1][2], data[2][2], int(L))
+storepiEN = np.random.normal(data[1][3], data[2][3], int(L))
+storepiEE = np.random.normal(data[1][4], data[2][4], int(L))
+storeI0 = np.random.normal(data[1][5], data[2][5], int(L))
+storefs = np.random.normal(data[1][6], data[2][6], int(L))
 
 
 #-------------------------------------------------------------------------------------
 ################################## MULTIPROCESSING ###################################
 #-------------------------------------------------------------------------------------
+
+print("--- Starting Multiprocessing ---")
 
 def MultiProcessingLoop(iteration):
 
@@ -152,7 +151,7 @@ def MultiProcessingLoop(iteration):
 start_time = time.time()
 
 if __name__ == '__main__': 
-    iterations = range(L)
+    iterations = range(int(L))
     results = p_map(MultiProcessingLoop, iterations)
     
 print("--- Multiprocessing took %s seconds ---" % (time.time() - start_time))
