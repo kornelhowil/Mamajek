@@ -3,4 +3,4 @@ numpy
 pandas
 astropy
 weightedstats
-p_tqdm
+tqdm
