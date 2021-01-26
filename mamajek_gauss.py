@@ -4,6 +4,7 @@ from matplotlib.colors import LogNorm
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
+import pandas as pd
 import math, sys, os, time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -21,7 +22,7 @@ rc('text', usetex=False) #nie wiem czy potrzebne
 ################################ INPUT AND CONSTANTS #################################
 #-------------------------------------------------------------------------------------
 
-fname_samples =  "BLG196.5-CLEAN_CUT_1_472.91439489720904.npy" 
+fname_samples =  "data.txt" 
 # cords
 alpha = 270.84187
 delta = -29.25871
@@ -33,7 +34,7 @@ AI =  0.956
 # t0par
 t0par = 4818 
 # number of iterations
-L = 5e5 
+L = int(5e4)
 # some fixed distance values
 DSest = 8000 
 DSmin = 7999 
@@ -62,8 +63,21 @@ gall=eq2gal.galactic.l.degree
 galb=eq2gal.galactic.b.degree
 
 ## READING THE FILE
-print("Reading input file: ", fname_samples)
-data = np.load(fname_samples)
+#print("Reading input file: ", fname_samples)
+#data = open(fname_samples, "r")
+#data = [line.split() for line in data]
+data = pd.read_csv(fname_samples, sep="\t", header=None)
+
+print(data)
+
+storet0 = np.random.normal(data[1][0], data[2][0], L)
+storetE = np.random.normal(data[1][1], data[2][1], L)
+storeu0 = np.random.normal(data[1][2], data[2][2], L)
+storepiEN = np.random.normal(data[1][3], data[2][3], L)
+storepiEE = np.random.normal(data[1][4], data[2][4], L)
+storeI0 = np.random.normal(data[1][5], data[2][5], L)
+storefs = np.random.normal(data[1][6], data[2][6], L)
+
 
 #-------------------------------------------------------------------------------------
 ################################## MULTIPROCESSING ###################################
@@ -74,13 +88,13 @@ def MultiProcessingLoop(iteration):
     global count
     np.random.seed()
 
-    t0 = data[iteration][0]
-    tE = data[iteration][1]
-    u0 = data[iteration][2]
-    piEN = data[iteration][3]
-    piEE = data[iteration][4]
-    I0 = data[iteration][5]
-    fs = data[iteration][6]
+    t0 = storet0[iteration]
+    tE = storetE[iteration]
+    u0 = storeu0[iteration]
+    piEN = storepiEN[iteration]
+    piEE = storepiEE[iteration]
+    I0 = storeI0[iteration]
+    fs = storefs[iteration]
 
     piE = np.sqrt(piEN*piEN+piEE*piEE)
     # Correcting tE to heliocentric view
@@ -140,11 +154,11 @@ start_time = time.time()
 if __name__ == '__main__': 
     iterations = range(L)
     results = p_map(MultiProcessingLoop, iterations)
-
+    
 print("--- Multiprocessing took %s seconds ---" % (time.time() - start_time))
 
 results_t = np.array(results).T 
-#0 - w_gal, 1 - w_gaia, 2 - mass, 3 - distance, 4 - blend, 5 - Ilens, 6 - isource
+# 0 - w_gal, 1 - w_gaia, 2 - mass, 3 - distance, 4 - blend, 5 - Ilens, 6 - isource
 storewgal = results_t[0]
 storewgaia=results_t[1]
 ML = results_t[2]
@@ -209,9 +223,9 @@ maxid2d = np.unravel_index(maxid, H1.shape)
 cbar=plt.colorbar(map1,ticks=[1e-5,1e-4,1e-3,1e-2])
 cbar.ax.set_yticklabels(['-5','-4','-3','-2'])
 cbar.set_label("log prob density",labelpad=0)
-ax5 = plt.axes([0.17,0.10,0.80,0.35])
 
 # BLEND - LENS
+ax5 = plt.axes([0.17,0.10,0.80,0.35])
 H2, xedges, yedges = np.histogram2d(ZIP[:,0],ZIP[:,4],weights=ZIP[:,2],bins=[np.linspace(15,22,100),np.linspace(15,22,100)], normed=True)
 map2 = plt.pcolormesh(yedges,xedges,H2/np.sum(H2),cmap='jet',norm=LogNorm(), edgecolors='None', linewidth=0,vmin=1e-5, vmax=1e-2)
 ax5.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
