@@ -11,10 +11,11 @@ from gal_jac_dens import *
 from parsubs import *
 from Mamajek import *
 import weightedstats as ws
-from p_tqdm import p_map
+from multiprocessing import Pool, set_start_method
+from tqdm import tqdm
 
 fun = initialize_interp()
-rc('text', usetex=False) #nie wiem czy potrzebne
+rc('text', usetex=False) 
 
 
 #-------------------------------------------------------------------------------------
@@ -139,9 +140,15 @@ def MultiProcessingLoop(iteration):
 
 start_time = time.time()
 
-if __name__ == '__main__': 
-    iterations = range(int(L))
-    results = p_map(MultiProcessingLoop, iterations)
+results = []
+if __name__ == '__main__':
+    set_start_method('fork')
+    iterations = np.random.randint(len(data),size=int(L))
+    with Pool() as pool:
+        with tqdm(total=int(L)) as pbar:
+            for i in pool.imap_unordered(MultiProcessingLoop, iterations):
+                results.append(i)
+                pbar.update()
 
 print("--- Multiprocessing took %s seconds ---" % (time.time() - start_time))
 
@@ -199,7 +206,7 @@ fig = plt.figure(figsize=(5,7))
 # MASS - DISTANCE
 ax1 = plt.axes([0.17,0.6 ,0.80,0.35])
 H1, xedges, yedges = np.histogram2d(ZIP[:,1],ZIP[:,3],weights=ZIP[:,2],bins=[10**np.linspace(-1,1.7,100),np.linspace(0,8,100)], normed=True)
-map1=plt.pcolormesh(yedges,xedges,H1/np.sum(H1),cmap='jet',norm=LogNorm(),vmin=1e-5, vmax=1e-2)
+map1=plt.pcolormesh(yedges,xedges,H1/np.sum(H1),cmap='jet',norm=LogNorm(1e-5, 1e-2))
 ax1.set_ylabel(r'lens mass $[M_\odot]$')
 ax1.set_xlabel('lens distance [kpc]')
 ax1.set_yscale('log')
@@ -215,7 +222,7 @@ ax5 = plt.axes([0.17,0.10,0.80,0.35])
 
 # BLEND - LENS
 H2, xedges, yedges = np.histogram2d(ZIP[:,0],ZIP[:,4],weights=ZIP[:,2],bins=[np.linspace(15,22,100),np.linspace(15,22,100)], normed=True)
-map2 = plt.pcolormesh(yedges,xedges,H2/np.sum(H2),cmap='jet',norm=LogNorm(), edgecolors='None', linewidth=0,vmin=1e-5, vmax=1e-2)
+map2 = plt.pcolormesh(yedges,xedges,H2/np.sum(H2),cmap='jet',norm=LogNorm(1e-5, 1e-2), edgecolors='None', linewidth=0)
 ax5.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
 ax5.set_xlabel('lens light [mag]')
 ax5.set_ylabel('blend light [mag]')
